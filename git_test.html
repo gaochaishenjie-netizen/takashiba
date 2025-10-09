@@ -53,6 +53,8 @@ const keys = {};
 window.addEventListener('keydown',e=>keys[e.code]=true);
 window.addEventListener('keyup',e=>keys[e.code]=false);
 
+//
+//コメントテスト
 function collideWithWall(x,y){
   let col = Math.floor(x/TILE_SIZE);
   let row = Math.floor(y/TILE_SIZE);
