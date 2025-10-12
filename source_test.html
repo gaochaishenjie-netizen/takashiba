@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>bbbbbbbaaaaaaaaaaパックマン風ゲーム</title>
+<style>
+  body { margin: 0; background: black; overflow: hidden; }
+  canvas { display: block; margin: 0 auto; background: black; }
+</style>
+</head>
+<body>
+<canvas id="game" width="400" height="400"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+const TILE_SIZE = 40;
+const ROWS = 10;
+const COLS = 10;
+
+// マップ: 0=空,1=壁
+const map = [
+  [1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,1,0,0,0,0,1],
+  [1,0,1,0,1,0,1,1,0,1],
+  [1,0,1,0,0,0,0,1,0,1],
+  [1,0,1,1,1,1,0,1,0,1],
+  [1,0,0,0,0,1,0,1,0,1],
+  [1,1,1,1,0,1,0,1,0,1],
+  [1,0,0,1,0,0,0,1,0,1],
+  [1,0,0,0,0,1,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1]
+];
+
+// ドットの位置
+let dots = [];
+for(let r=0;r<ROWS;r++){
+  for(let c=0;c<COLS;c++){
+    if(map[r][c]===0){
+      dots.push({x:c*TILE_SIZE + TILE_SIZE/2, y:r*TILE_SIZE + TILE_SIZE/2, size:6});
+    }
+  }
+}
+
+// プレイヤー
+const player = {x:TILE_SIZE+TILE_SIZE/2, y:TILE_SIZE+TILE_SIZE/2, size:20, speed:2, dx:0, dy:0};
+
+// 敵（ゴースト）
+let enemy = {x:8*TILE_SIZE+TILE_SIZE/2, y:8*TILE_SIZE+TILE_SIZE/2, size:20, speed:1.5, dx:1, dy:0};
+
+// キー操作
+const keys = {};
+window.addEventListener('keydown',e=>keys[e.code]=true);
+window.addEventListener('keyup',e=>keys[e.code]=false);
+
+//
+//コメントテスト
+function collideWithWall(x,y){
+  let col = Math.floor(x/TILE_SIZE);
+  let row = Math.floor(y/TILE_SIZE);
+  return map[row][col]===1;
+}
+
+function gameLoop(){
+  // 移動
+  player.dx = 0; player.dy = 0;
+  if(keys['ArrowUp']) player.dy=-player.speed;
+  if(keys['ArrowDown']) player.dy=player.speed;
+  if(keys['ArrowLeft']) player.dx=-player.speed;
+  if(keys['ArrowRight']) player.dx=player.speed;
+
+  // 壁判定
+  if(!collideWithWall(player.x + player.dx, player.y)) player.x += player.dx;
+  if(!collideWithWall(player.x, player.y + player.dy)) player.y += player.dy;
+
+  // 敵移動（簡易パターン：左右反転）
+  enemy.x += enemy.dx * enemy.speed;
+  enemy.y += enemy.dy * enemy.speed;
+  if(collideWithWall(enemy.x, enemy.y)) enemy.dx*=-1;
+
+  // ドット取得判定
+  dots = dots.filter(d=>{
+    let dist = Math.hypot(player.x - d.x, player.y - d.y);
+    return dist > player.size/2 + d.size/2;
+  });
+
+  // 衝突判定（敵）
+  let dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+  if(dist < player.size/2 + enemy.size/2){
+    alert('ゲームオーバー!');
+    window.location.reload();
+  }
+
+  // 描画
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // 壁
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      if(map[r][c]===1){
+        ctx.fillStyle='blue';
+        ctx.fillRect(c*TILE_SIZE,r*TILE_SIZE,TILE_SIZE,TILE_SIZE);
+      }
+    }
+  }
+
+  // ドット
+  dots.forEach(d=>{
+    ctx.fillStyle='white';
+    ctx.beginPath();
+    ctx.arc(d.x,d.y,d.size,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  // プレイヤー
+  ctx.fillStyle='yellow';
+  ctx.beginPath();
+  ctx.arc(player.x,player.y,player.size/2,0,Math.PI*2);
+  ctx.fill();
+
+  // 敵
+  ctx.fillStyle='red';
+  ctx.beginPath();
+  ctx.arc(enemy.x,enemy.y,enemy.size/2,0,Math.PI*2);
+  ctx.fill();
+
+  // スコア表示
+  ctx.fillStyle='white';
+  ctx.font='20px Arial';
+  ctx.fillText(`残りドット: ${dots.length}`,10,20);
+
+  // 勝利判定
+  if(dots.length===0){
+    alert('クリア!');
+    window.location.reload();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
